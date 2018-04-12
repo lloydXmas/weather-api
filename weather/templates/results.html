@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ (results['city'])|capitalize }} Weather {% endblock %}
+{% block content %}
+    <div class="row align-items-center">
+        <div class="col-md-4 col-sm-12">
+          <span class="align-middle"><h1>{{ (results['city'])|capitalize }}</h1></span>
+        </div>
+        <div class="col-md-4 col-sm-12">
+          <img src="/static/img/{{ results['icon']|safe }}.svg" width="100" height="100" alt="{{ results['icon'] }}" />
+        </div>
+    </div>
+    <div class="col-12">
+        <div clas="row">
+            <div class="result"> Current Conditions: {{ results['summary'] }} </div>
+            <div class="result"> Temperature: {{ results['temp'] }} &#8457; </div>
+            <div class="result"> Humidity: {{ results['humid']*100|int }} % </div>
+            <div class="result"> Barometric Pressure: {{ results['pressure'] }} hPa</div>
+            <div class="result"> Wind Speed: {{ results['wind'] }} m/s </div>
+        </div>
+    <div class="new_search">
+        <a href="/">New Search</a>
+
+    </div>
+  </div>
+
+{% endblock %}

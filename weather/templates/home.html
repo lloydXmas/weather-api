@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}City Lookup{% endblock %}
+{% block content %}
+<div class="lookup">
+<h1>Lookup Weather for a City</h1>
+<form action="" method="POST">
+  <div class="form-group">
+    <label for="city">City</label>
+    <input type="text" class="form-control" name="city" id="city" placeholder="Enter City">
+  </div>
+	<button type="submit" class="btn btn-primary">Search</button>
+</div>
+{% endblock %}
