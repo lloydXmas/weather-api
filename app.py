@@ -11,7 +11,7 @@ from geopy.geocoders import Nominatim
 geolocator = Nominatim()
 
 from jinja2 import \
-    Environment, PackageLoader, select_autoescape
+    Environment, PackageLoader, select_autoescape, TemplateNotFound
 
 ENV = Environment(
     loader=PackageLoader('weather', 'templates'),
@@ -39,7 +39,7 @@ class MainHandler(TemplateHandler):
         city = str.lower(city)
         location = geolocator.geocode(city)
         loc = (location.latitude, location.longitude)
-        payload = str(loc).strip("()")
+        loc = str(loc).strip("()")
 
 
         # check if city exists in db
@@ -50,7 +50,7 @@ class MainHandler(TemplateHandler):
         if not results:
             # no db entry for this city, do API requst
             print('Requested city no in db, calling API')
-            url = "https://api.darksky.net/forecast/MY-SECRET-API-KEY/{}".format(payload)
+            url = "https://api.darksky.net/forecast/MY_API_KEY/{}".format(loc)
             r = requests.get(url)
             data = r.json()
 
@@ -63,7 +63,7 @@ class MainHandler(TemplateHandler):
             windspeed = data['currently']['windSpeed']
 
             results = self.session.query(
-                'INSERT INTO weather (city, time, icon, summary, temp, humid, pressure, wind) VALUES (%(city)s, %(now)s, %(icon)s, %(summary)s, %(temperature)s, %(humidity)s, %(pressure)s, %(windspeed)s)',
+                'INSERT INTO weather (city, time, icon, summary, temp, humid, pressure, wind, loc) VALUES (%(city)s, %(now)s, %(icon)s, %(summary)s, %(temperature)s, %(humidity)s, %(pressure)s, %(windspeed)s, %(loc)s)',
                 {'city': city,
                  'now': now,
                  'icon': icon,
@@ -71,7 +71,8 @@ class MainHandler(TemplateHandler):
                  'temperature': temperature,
                  'humidity': humidity,
                  'pressure': pressure,
-                 'windspeed': windspeed}
+                 'windspeed': windspeed,
+                 'loc': loc}
                 )
         else:
             # db entry for city exists
@@ -85,7 +86,7 @@ class MainHandler(TemplateHandler):
                     {'city': city}
                     )
                 print('Calling API to replace old entry')
-                url = "https://api.darksky.net/forecast/MY-SECRET-API-KEY/{}".format(payload)
+                url = "https://api.darksky.net/forecast/MY_API_KEY/{}".format(loc)
                 r = requests.get(url)
                 data = r.json()
 
@@ -99,7 +100,7 @@ class MainHandler(TemplateHandler):
                 windspeed = data['currently']['windSpeed']
 
                 results = self.session.query(
-                    'INSERT INTO weather (city, time, icon, summary, temp, humid, pressure, wind) VALUES (%(city)s, %(now)s, %(icon)s, %(summary)s, %(temperature)s, %(humidity)s, %(pressure)s, %(windspeed)s)',
+                    'INSERT INTO weather (city, time, icon, summary, temp, humid, pressure, wind, loc) VALUES (%(city)s, %(now)s, %(icon)s, %(summary)s, %(temperature)s, %(humidity)s, %(pressure)s, %(windspeed)s, %(loc)s)',
                     {'city': city,
                      'now': now,
                      'icon': icon,
@@ -107,7 +108,8 @@ class MainHandler(TemplateHandler):
                      'temperature': temperature,
                      'humidity': humidity,
                      'pressure': pressure,
-                     'windspeed': windspeed}
+                     'windspeed': windspeed,
+                     'loc': loc}
                     )
             else:
                 # db entry is still new
@@ -121,12 +123,21 @@ class ResultHandler(TemplateHandler):
             'SELECT * FROM weather WHERE city = %(city)s',
             {'city': city}
             ).items()
-        self.render_template("results.html", {'results': results[0]})
+        if not results:
+            self.redirect('/error')
+        else:
+            self.render_template("results.html", {'results': results[0]})
+
+class ErrorHandler(TemplateHandler):
+    def get(self):
+        self.render_template("error.html", {})
+
 
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
         (r"/city/(.*)", ResultHandler),
+        (r"/error", ErrorHandler),
         (r"/static/(.*)",
             tornado.web.StaticFileHandler, {'path': 'static'}),
     ], autoreload=True)
